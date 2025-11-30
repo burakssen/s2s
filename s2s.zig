@@ -486,22 +486,25 @@ fn computeTypeHash(comptime T: type) [8]u8 {
 
     return intToLittleEndianBytes(hasher.final());
 }
-
 fn getSortedErrorNames(comptime T: type) []const []const u8 {
     comptime {
         const error_set = @typeInfo(T).error_set orelse @compileError("Cannot serialize anyerror");
 
-        var sorted_names: [error_set.len][]const u8 = undefined;
-        for (error_set, 0..) |err, i| {
-            sorted_names[i] = err.name;
-        }
-
-        std.mem.sortUnstable([]const u8, &sorted_names, {}, struct {
-            fn order(ctx: void, lhs: []const u8, rhs: []const u8) bool {
-                _ = ctx;
-                return (std.mem.order(u8, lhs, rhs) == .lt);
+        const sorted_names = blk: {
+            var names: [error_set.len][]const u8 = undefined;
+            for (error_set, 0..) |err, i| {
+                names[i] = err.name;
             }
-        }.order);
+
+            std.mem.sortUnstable([]const u8, &names, {}, struct {
+                fn order(ctx: void, lhs: []const u8, rhs: []const u8) bool {
+                    _ = ctx;
+                    return (std.mem.order(u8, lhs, rhs) == .lt);
+                }
+            }.order);
+            break :blk names;
+        };
+
         return &sorted_names;
     }
 }
@@ -510,17 +513,21 @@ fn getSortedEnumNames(comptime T: type) []const []const u8 {
     comptime {
         const type_info = @typeInfo(T).@"enum";
 
-        var sorted_names: [type_info.fields.len][]const u8 = undefined;
-        for (type_info.fields, 0..) |err, i| {
-            sorted_names[i] = err.name;
-        }
-
-        std.mem.sortUnstable([]const u8, &sorted_names, {}, struct {
-            fn order(ctx: void, lhs: []const u8, rhs: []const u8) bool {
-                _ = ctx;
-                return (std.mem.order(u8, lhs, rhs) == .lt);
+        const sorted_names = blk: {
+            var names: [type_info.fields.len][]const u8 = undefined;
+            for (type_info.fields, 0..) |err, i| {
+                names[i] = err.name;
             }
-        }.order);
+
+            std.mem.sortUnstable([]const u8, &names, {}, struct {
+                fn order(ctx: void, lhs: []const u8, rhs: []const u8) bool {
+                    _ = ctx;
+                    return (std.mem.order(u8, lhs, rhs) == .lt);
+                }
+            }.order);
+            break :blk names;
+        };
+
         return &sorted_names;
     }
 }
