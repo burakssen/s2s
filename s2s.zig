@@ -313,7 +313,7 @@ fn recursiveDeserialize(
             const Tag = if (list.tag_type == usize) u64 else list.tag_type;
             const tag_value: Tag = @truncate(try stream.takeInt(AlignedInt(Tag), .little));
             if (list.is_exhaustive) {
-                target.* = std.meta.intToEnum(T, tag_value) catch return error.UnexpectedData;
+                target.* = std.enums.fromInt(T, tag_value) orelse return error.UnexpectedData;
             } else {
                 target.* = @enumFromInt(tag_value);
             }
@@ -359,8 +359,7 @@ fn recursiveDeserialize(
 
 fn makeMutableSlice(comptime T: type, slice: []const T) []T {
     if (slice.len == 0) {
-        var buf: [0]T = .{};
-        return &buf;
+        return &[_]T{};
     } else {
         return @as([*]T, @constCast(slice.ptr))[0..slice.len];
     }
